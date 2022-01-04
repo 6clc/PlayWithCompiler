@@ -40,5 +40,7 @@ cmake-build-debug/
 
 #cpp files
 *.o
+*.out
 
 playscript-java/src/main/play/ir/
+build/

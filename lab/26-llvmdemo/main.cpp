@@ -349,7 +349,7 @@ int emit_object() {
     }
 
     legacy::PassManager pass;
-    auto FileType = TargetMachine::CGFT_ObjectFile;
+    auto FileType = llvm::CGFT_ObjectFile;
 
     if (TheTargetMachine->addPassesToEmitFile(pass, dest, nullptr, FileType)) {
         errs() << "TheTargetMachine can't emit a file of this type";
@@ -418,7 +418,7 @@ int JIT() {
 
 int main(){
     //即时编译和运行
-    //return JIT();
+    // return JIT();
 
     //编译成静态文件
     return emit_object();
