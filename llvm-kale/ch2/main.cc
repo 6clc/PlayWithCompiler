@@ -115,6 +115,28 @@ public:
 };
 
 
+ExprAST parsePrimaryAST(){
+  switch(token){
+    case INDENTFIER_TOKEN:
+      return parserIndentifierAST();
+    case NUM_TOKEN:
+      return parseNumIndentifierAST();
+    case 
+  }
+}
+
+ExprAST parseExpressionAST(){
+  ExprAST lhs = parsePrimaryAST();
+  ExprAST expression_ast = parseBinaryAST(0, lhs);
+  return expression_ast;
+}
+
+ExprAST parseTopLevel(){
+  ExprAST express_ast = parseExpressionAST();
+  FunctionAST func_ast = parseFuncAST("none-name", {}, express_ast);
+  return func_ast;
+}
+
 void main_loop(){
   while(1){
     switch(CurToken){
