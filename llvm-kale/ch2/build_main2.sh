@@ -1,0 +1,1 @@
+clang++ -g -O3 main2.cc `llvm-config --cxxflags`

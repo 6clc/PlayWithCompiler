@@ -19,9 +19,11 @@ static int get_next_token(){
   return CurToken=get_token();
 }
 int get_token(){
+  cout <<endl  << ">> start parse token" <<endl;
   static int ch = ' ';
   while(isspace(ch)) ch = getchar();
   
+  cout << ">> end parse token" <<endl;
   if(isalpha(ch)){
     IntentifierStr = ch;
     while( isalnum(ch = getchar()) ) IntentifierStr += ch;
@@ -53,8 +55,10 @@ public:
 virtual ~ExprAST(){
 }
 virtual void codegen(){
+cout << " base ast, may error" << endl;
 }
-};
+
+	};
 
 class NumberExprAST:public ExprAST{
 public:
@@ -114,55 +118,70 @@ public:
   }
 };
 
+ExprAST* parseNumAST(){
+ //  cout << "parseNumAST()" <<endl;
+  return new  NumberExprAST(Num);
+}
 
-ExprAST parsePrimaryAST(){
-  switch(token){
-    case INDENTFIER_TOKEN:
-      return parserIndentifierAST();
+ExprAST* parsePrimaryAST(){
+  switch(CurToken){
+ //   case INDENTFIER_TOKEN:
+ //     return parserIndentifierAST();
     case NUM_TOKEN:
-      return parseNumIndentifierAST();
-    case 
+      return parseNumAST();
+//  case '(':
+//      return parseParenAST();
+    default:
+      	return parseNumAST();
   }
 }
 
-ExprAST parseExpressionAST(){
-  ExprAST lhs = parsePrimaryAST();
-  ExprAST expression_ast = parseBinaryAST(0, lhs);
+ExprAST* parseBinaryAST(int predence, ExprAST* LHS){
+	return LHS;
+}
+
+ExprAST* parseExpressionAST(){
+  ExprAST* lhs = parsePrimaryAST();
+  ExprAST* expression_ast = parseBinaryAST(0, lhs);
   return expression_ast;
 }
 
-ExprAST parseTopLevel(){
-  ExprAST express_ast = parseExpressionAST();
-  FunctionAST func_ast = parseFuncAST("none-name", {}, express_ast);
-  return func_ast;
+ExprAST* parseTopLevel(){
+  ExprAST* express_ast = parseExpressionAST();
+//  FunctionAST func_ast = parseFuncAST("none-name", {}, express_ast);
+//  return func_ast;
+  return express_ast;
+}
+
+
+void handleTopLevel(){
+ // auto topAST = parseTopLevel();
+ // cout << typeid(topAST).name() <<endl;
+  ExprAST* topAST = parseTopLevel();
+//  cout << typeid(*topAST).name();
+  topAST -> codegen();
 }
 
 void main_loop(){
   while(1){
     switch(CurToken){
-      case INDENTFIER_TOKEN:
-        VariableExprAST(IntentifierStr).codegen();
-        break;
       case DEF_TOKEN:
         std::cout << "DEF: " << endl;
         break;
       case EXTERN_TOKEN:
         std::cout <<  "EXTERN: " <<endl;
         break;
-      case NUM_TOKEN:
-        NumberExprAST(Num).codegen();
-        break;
       default:
-        printf("%c\n", CurToken);
+	handleTopLevel();
         break;
     }
-    fprintf(stderr, "%s\n", "please input code");
     get_next_token();
+    //  fprintf(stderr, "%s\n", "please input code");
   }
 }
 
 int main() {
-  fprintf(stderr, "%s\n", "please input code");
+  // fprintf(stderr, "%s\n", "please input code");
   get_next_token();
   main_loop();
   return 0;
