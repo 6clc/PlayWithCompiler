@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <map>
 #include <iostream>
 #include <vector>
 using namespace std;
@@ -18,12 +19,18 @@ static int CurToken = -1;
 static int get_next_token(){
   return CurToken=get_token();
 }
+
+static map<char, int> pred_mp;
+
+int get_precedence(){
+  if(!isascii(CurToken)) return -1;
+  if(pred_mp.count(CurToken)==0) return -1;
+  return pred_mp[CurToken];
+}
 int get_token(){
-  cout <<endl  << ">> start parse token" <<endl;
   static int ch = ' ';
   while(isspace(ch)) ch = getchar();
   
-  cout << ">> end parse token" <<endl;
   if(isalpha(ch)){
     IntentifierStr = ch;
     while( isalnum(ch = getchar()) ) IntentifierStr += ch;
@@ -82,17 +89,17 @@ public:
 class BinExprAST: public ExprAST{
 public:
   char op;
-  ExprAST lhs;
-  ExprAST rhs;
-  BinExprAST(char op, ExprAST& lhs, ExprAST& rhs)
+  ExprAST* lhs;
+  ExprAST* rhs;
+  BinExprAST(char op, ExprAST* lhs, ExprAST* rhs)
     :op(op), lhs(lhs), rhs(rhs){}
   void codegen(){
     cout << "[binary ast ";
-    lhs.codegen();
+    lhs->codegen();
     cout << " " << op << " ";
-    rhs.codegen();
+    rhs->codegen();
+    cout << " ] ";
   }
-
 };
 
 class CallableAST: public ExprAST{
@@ -120,7 +127,9 @@ public:
 
 ExprAST* parseNumAST(){
  //  cout << "parseNumAST()" <<endl;
-  return new  NumberExprAST(Num);
+  ExprAST* ret =  new  NumberExprAST(Num);
+  get_next_token();
+  return ret;
 }
 
 ExprAST* parsePrimaryAST(){
@@ -132,12 +141,28 @@ ExprAST* parsePrimaryAST(){
 //  case '(':
 //      return parseParenAST();
     default:
-      	return parseNumAST();
+      	return nullptr; 
   }
 }
 
-ExprAST* parseBinaryAST(int predence, ExprAST* LHS){
-	return LHS;
+ExprAST* parseBinaryAST(int pre_precedence, ExprAST* LHS){
+  while (1){
+    int cur_precedence = get_precedence();
+    if(cur_precedence < pre_precedence) return LHS;
+
+    char binop = CurToken;
+    get_next_token();
+    ExprAST* RHS = parsePrimaryAST();
+    int nxt_precedence = get_precedence();
+    if(cur_precedence < nxt_precedence){
+      RHS = parseBinaryAST(cur_precedence + 1, RHS);
+      if (RHS == nullptr) return nullptr;
+    }
+
+    LHS = new BinExprAST(binop, LHS, RHS);
+  }
+  return LHS;
+
 }
 
 ExprAST* parseExpressionAST(){
@@ -164,24 +189,25 @@ void handleTopLevel(){
 
 void main_loop(){
   while(1){
+    fprintf(stderr,"INPUT>>");
     switch(CurToken){
+      case ';':
+        get_next_token();
       case DEF_TOKEN:
-        std::cout << "DEF: " << endl;
         break;
       case EXTERN_TOKEN:
-        std::cout <<  "EXTERN: " <<endl;
         break;
       default:
-	handleTopLevel();
+	      handleTopLevel();
         break;
     }
-    get_next_token();
-    //  fprintf(stderr, "%s\n", "please input code");
   }
 }
 
 int main() {
-  // fprintf(stderr, "%s\n", "please input code");
+  pred_mp['+'] = 10;
+  pred_mp['-'] = 10;
+  fprintf(stderr, "input any start");
   get_next_token();
   main_loop();
   return 0;
