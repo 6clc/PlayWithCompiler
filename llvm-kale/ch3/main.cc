@@ -3,7 +3,7 @@
 #include <iostream>
 #include <vector>
 
-#include "llvm/IR/Context.h"
+#include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/IRBuilder.h"
 
@@ -11,11 +11,12 @@
 #include <llvm/IR/Constants.h>
 
 using namespace std;
+using namespace llvm;
 int get_token();
 
-LLVMContext* the_context;
-Module* the_module;
-IRBuilder<>* the_builder;
+static LLVMContext* the_context = new LLVMContext();
+static Module* the_module = new module(the_context);
+static IRBuilder<>* the_builder = new IRBuilder<>();
 enum LEXER_TOKEN{
 EOF_TOKEN = -1,
 DEF_TOKEN = -2,
@@ -85,7 +86,8 @@ public:
   double val;
   NumberExprAST(double val):val(val){}
   Value* codegen(){
-    return ConstantFP::get(the_context, APFloat(val);
+    cout << "num ast"; 
+    return ConstantFP::get(*the_context, APFloat(val));
   }
 };
 
@@ -93,9 +95,9 @@ class VariableExprAST:public ExprAST{
 public:
   string name;
   VariableExprAST(string name):name(name){}
-  void codegen(){
-    cout << "[var ast " << name << " ]";
-  }
+  // void codegen(){
+  //   cout << "[var ast " << name << " ]";
+  // }
 
 };
 
@@ -107,19 +109,17 @@ public:
   BinExprAST(char op, ExprAST* lhs, ExprAST* rhs)
     :op(op), lhs(lhs), rhs(rhs){}
   Value* codegen(){
-          Value* ll = lhs->codegen();
-          Value* rr = rhs->codegen();
-          if(!ll || !rr) return nullptr;
+    Value* ll = lhs->codegen();
+    Value* rr = rhs->codegen();
+    if(!ll || !rr) return nullptr;
 
-          switch(op)
-          {
-                  case '+':
-                          return the_builder.CreateFAdd(ll, rr, "addtmp");
-                 
-
-
-          }
-
+    switch(op)
+    {
+        case '+':
+        return the_builder -> CreateFAdd(ll, rr, "addtmp");
+        default:
+        return nullptr;
+    }
   }
 };
 
@@ -128,9 +128,9 @@ public:
   string name;
   vector<ExprAST> paras;
   CallableAST(string name, vector<ExprAST> paras):name(name), paras(paras){}
-  void codegen(){
-    cout << "[调用函数 "<< name <<"]";
-  }
+  // void codegen(){
+  //   cout << "[调用函数 "<< name <<"]";
+  // }
   
 };
 
@@ -141,9 +141,9 @@ public:
   ExprAST body;
   FuncAST(string name, vector<string> paras, ExprAST body)
     : name(name), paras(paras), body(body){}
-  void codegen(){
-    cout << "[定义函数 " << name << " ]";
-  }
+  // void codegen(){
+  //   cout << "[定义函数 " << name << " ]";
+  // }
 };
 
 ExprAST* parseNumAST(){
@@ -205,12 +205,12 @@ void handleTopLevel(){
  // cout << typeid(topAST).name() <<endl;
   ExprAST* topAST = parseTopLevel();
 //  cout << typeid(*topAST).name();
-  topAST -> codegen();
+  // topAST -> codegen();
 }
 
 void main_loop(){
   while(1){
-    fprintf(stderr,"INPUT>>");
+    fprintf(stderr,"ready>>");
     switch(CurToken){
       case ';':
         get_next_token();
@@ -228,7 +228,7 @@ void main_loop(){
 int main() {
   pred_mp['+'] = 10;
   pred_mp['-'] = 10;
-  fprintf(stderr, "input any start");
+  fprintf(stderr, "ready>>");
   get_next_token();
   main_loop();
   return 0;
