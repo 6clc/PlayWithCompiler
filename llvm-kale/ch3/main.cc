@@ -33,7 +33,9 @@ static double Num = 0.;
 
 static int CurToken = -1;
 static int get_next_token(){
-  return CurToken=get_token();
+  CurToken=get_token();
+  cout << "token" << CurToken << endl;
+  return CurToken;
 }
 
 static map<char, int> pred_mp;
@@ -101,7 +103,7 @@ public:
   string name;
   VariableExprAST(string name):name(name){}
   Value* codegen(){
-    //cout << "[var ast " << name << " ]";
+    cout << "[var ast " << name << " ]";
     if(named_values.count(name)==0) return nullptr;
     return named_values[name];
   }
@@ -210,6 +212,7 @@ ExprAST* parsePrimaryAST(){
 ExprAST* parseBinaryAST(int pre_precedence, ExprAST* LHS){
   while (1){
     int cur_precedence = get_precedence();
+    cout << "predence" << pre_precedence << " " << cur_precedence << endl;
     if(cur_precedence < pre_precedence) return LHS;
 
     char binop = CurToken;
@@ -235,22 +238,29 @@ ExprAST* parseExpressionAST(){
 
 ExprAST* parseProtoTypeAST(){
   string name = IntentifierStr;
+  cout << "func name " << name << endl;
+  get_next_token();
   get_next_token(); // eat (
   
   vector<string> args;
+  cout << "liuchao" << CurToken << endl;
   while(CurToken == INDENTFIER_TOKEN){
     args.push_back(IntentifierStr);
+    cout << "args name " << IntentifierStr << endl;
     get_next_token();
   }
   // eat )
+  get_next_token();
   cout << "parse prototype" << endl;
 
   return new ProtoTypeAST(name, args);
 }
 
 ExprAST* parseFuncAST(){
+  fprintf(stderr, "eat def");
   get_next_token(); // eat DEF
   ExprAST* prototype_ast = parseProtoTypeAST();
+  // return prototype_ast;
   ExprAST* expression_ast = parseExpressionAST();
   cout << "parse func ast" << endl;
   return new FuncAST(prototype_ast, expression_ast);
@@ -269,17 +279,16 @@ void handleTopLevel(){
  // cout << typeid(topAST).name() <<endl;
   ExprAST* topAST = parseTopLevel();
 //  cout << typeid(*topAST).name();
-   auto* irr = topAST -> codegen();
-   irr->print(errs());
+  // auto* irr = topAST -> codegen();
+   // irr->print(errs());
    fprintf(stderr, "\n");
 }
 
 void handleDef(){
-  get_next_token();
   ExprAST* funcast = parseFuncAST();
-  auto* irr = funcast -> codegen();
-  irr->print(errs());
-  fprintf(stderr, "\n");
+  //auto* irr = funcast -> codegen();
+  // irr->print(errs());
+  fprintf(stderr, "handle def\n");
 }
 
 void main_loop(){
@@ -288,13 +297,15 @@ void main_loop(){
     switch(CurToken){
       case ';':
         get_next_token();
+        break;
       case DEF_TOKEN:
         handleDef();
         break;
       case EXTERN_TOKEN:
         break;
       default:
-	      handleTopLevel();
+	     // handleTopLevel();
+       get_next_token();
         break;
     }
   }
