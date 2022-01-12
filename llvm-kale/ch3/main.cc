@@ -15,8 +15,9 @@ using namespace llvm;
 int get_token();
 
 static LLVMContext* the_context = new LLVMContext();
-static Module* the_module = new module(the_context);
-static IRBuilder<>* the_builder = new IRBuilder<>();
+static Module* the_module = new Module("tmp", *the_context);
+static IRBuilder<>* the_builder = new IRBuilder<>(*the_context);
+static map<string, Value*> named_values;
 enum LEXER_TOKEN{
 EOF_TOKEN = -1,
 DEF_TOKEN = -2,
@@ -86,7 +87,7 @@ public:
   double val;
   NumberExprAST(double val):val(val){}
   Value* codegen(){
-    cout << "num ast"; 
+    //cout << "num ast"; 
     return ConstantFP::get(*the_context, APFloat(val));
   }
 };
@@ -95,9 +96,11 @@ class VariableExprAST:public ExprAST{
 public:
   string name;
   VariableExprAST(string name):name(name){}
-  // void codegen(){
-  //   cout << "[var ast " << name << " ]";
-  // }
+  Value* codegen(){
+    //cout << "[var ast " << name << " ]";
+    if(named_values.count(name)==0) return nullptr;
+    return named_values[name];
+  }
 
 };
 
@@ -134,16 +137,30 @@ public:
   
 };
 
+class ProtoTypeAST: public ExprAST
+{
+        public:
+                string name;
+                vector<string> paras;
+                ProtoTypeAST(string name, vector<string> args)
+                        :name(name), args(args){}
+                Value* codegen(){
+                        fprintf(stderr, "codegem prototype");
+                        return nullptr;
+                }
+
+}
+
 class FuncAST: public ExprAST{
 public:
-  string name;
-  vector<string> paras;
+  ProtoTypeAST proto_type;
   ExprAST body;
-  FuncAST(string name, vector<string> paras, ExprAST body)
-    : name(name), paras(paras), body(body){}
-  // void codegen(){
+  FuncAST(ProtoTypeAST proto_type, ExprAST body)
+    : proto_type(proto_type), body(body){}
+  Value* codegen(){
   //   cout << "[定义函数 " << name << " ]";
-  // }
+         return nullptr;
+  }
 };
 
 ExprAST* parseNumAST(){
@@ -153,10 +170,29 @@ ExprAST* parseNumAST(){
   return ret;
 }
 
+ExprAST* parserIndentifierAST(){
+ string name = IntentifierStr;
+ get_next_token();
+ if('(' != CurToken) return new VariableExprAST(name);
+ get_next_token();
+
+ vector<Value*> args;
+ if(')' != CurToken)
+ while(true){
+    Value* arg = parseExpressionAST();
+    if (')' == CurToken) break;
+    if (',' != CurToken){
+            fprintf(stderr, "call arg must split by ,");
+    }
+    get_next_token();
+ }
+ return new CallableAST(name, args);
+}
+
 ExprAST* parsePrimaryAST(){
   switch(CurToken){
- //   case INDENTFIER_TOKEN:
- //     return parserIndentifierAST();
+    case INDENTFIER_TOKEN:
+      return parserIndentifierAST();
     case NUM_TOKEN:
       return parseNumAST();
 //  case '(':
@@ -205,7 +241,9 @@ void handleTopLevel(){
  // cout << typeid(topAST).name() <<endl;
   ExprAST* topAST = parseTopLevel();
 //  cout << typeid(*topAST).name();
-  // topAST -> codegen();
+   auto* irr = topAST -> codegen();
+   irr->print(errs());
+   fprintf(stderr, "\n");
 }
 
 void main_loop(){
