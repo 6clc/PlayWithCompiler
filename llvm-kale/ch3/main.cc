@@ -10,6 +10,8 @@
 #include <llvm/ADT/APFloat.h>
 #include <llvm/IR/Constants.h>
 
+#include "llvm/Support/raw_ostream.h"
+
 using namespace std;
 using namespace llvm;
 int get_token();
@@ -82,6 +84,8 @@ return nullptr;
 
 };
 
+ExprAST* parseExpressionAST();
+
 class NumberExprAST:public ExprAST{
 public:
   double val;
@@ -129,8 +133,8 @@ public:
 class CallableAST: public ExprAST{
 public:
   string name;
-  vector<ExprAST> paras;
-  CallableAST(string name, vector<ExprAST> paras):name(name), paras(paras){}
+  vector<ExprAST*> paras;
+  CallableAST(string name, vector<ExprAST*> paras):name(name), paras(paras){}
   // void codegen(){
   //   cout << "[调用函数 "<< name <<"]";
   // }
@@ -141,7 +145,7 @@ class ProtoTypeAST: public ExprAST
 {
         public:
                 string name;
-                vector<string> paras;
+                vector<string> args;
                 ProtoTypeAST(string name, vector<string> args)
                         :name(name), args(args){}
                 Value* codegen(){
@@ -149,13 +153,13 @@ class ProtoTypeAST: public ExprAST
                         return nullptr;
                 }
 
-}
+};
 
 class FuncAST: public ExprAST{
 public:
-  ProtoTypeAST proto_type;
-  ExprAST body;
-  FuncAST(ProtoTypeAST proto_type, ExprAST body)
+  ExprAST* proto_type;
+  ExprAST* body;
+  FuncAST(ExprAST* proto_type, ExprAST* body)
     : proto_type(proto_type), body(body){}
   Value* codegen(){
   //   cout << "[定义函数 " << name << " ]";
@@ -176,10 +180,11 @@ ExprAST* parserIndentifierAST(){
  if('(' != CurToken) return new VariableExprAST(name);
  get_next_token();
 
- vector<Value*> args;
+ vector<ExprAST*>args;
  if(')' != CurToken)
  while(true){
-    Value* arg = parseExpressionAST();
+    ExprAST* arg = parseExpressionAST();
+    args.push_back(arg);
     if (')' == CurToken) break;
     if (',' != CurToken){
             fprintf(stderr, "call arg must split by ,");
@@ -228,6 +233,29 @@ ExprAST* parseExpressionAST(){
   return expression_ast;
 }
 
+ExprAST* parseProtoTypeAST(){
+  string name = IntentifierStr;
+  get_next_token(); // eat (
+  
+  vector<string> args;
+  while(CurToken == INDENTFIER_TOKEN){
+    args.push_back(IntentifierStr);
+    get_next_token();
+  }
+  // eat )
+  cout << "parse prototype" << endl;
+
+  return new ProtoTypeAST(name, args);
+}
+
+ExprAST* parseFuncAST(){
+  get_next_token(); // eat DEF
+  ExprAST* prototype_ast = parseProtoTypeAST();
+  ExprAST* expression_ast = parseExpressionAST();
+  cout << "parse func ast" << endl;
+  return new FuncAST(prototype_ast, expression_ast);
+}
+
 ExprAST* parseTopLevel(){
   ExprAST* express_ast = parseExpressionAST();
 //  FunctionAST func_ast = parseFuncAST("none-name", {}, express_ast);
@@ -246,6 +274,14 @@ void handleTopLevel(){
    fprintf(stderr, "\n");
 }
 
+void handleDef(){
+  get_next_token();
+  ExprAST* funcast = parseFuncAST();
+  auto* irr = funcast -> codegen();
+  irr->print(errs());
+  fprintf(stderr, "\n");
+}
+
 void main_loop(){
   while(1){
     fprintf(stderr,"ready>>");
@@ -253,6 +289,7 @@ void main_loop(){
       case ';':
         get_next_token();
       case DEF_TOKEN:
+        handleDef();
         break;
       case EXTERN_TOKEN:
         break;
