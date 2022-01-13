@@ -163,7 +163,11 @@ class ProtoTypeAST
                         vector<Value*> args_ty(args.size(), type::getDoubleTy(*the_context);
                         FunctionType* function_ty = FunctionType::get(type:getDoubleTy*(the_context), args_ty, false);
                         Function* ft = Function::create(function_ty, Function::ExternalLink, name, the_module->get(); 
-                                // setname
+                        unsigned int idx = 0;
+                        for(auto* arg:ft->args()){
+                          arg->setName(args[idx++]);
+                        }
+
                         return ft;
                 }
                 
@@ -179,9 +183,16 @@ public:
     : proto_type(proto_type), body(body){}
   Function* codegen(){
   //   cout << "[定义函数 " << name << " ]";
-  Function* ft = proto_type->codegen();
-
-         return nullptr;
+    Function* ft = the_module->getFuntcion(proto_type.name);
+    if ft == nullptr
+      :wFunction* ft = proto_type->codegen();
+    BasicBlock* basic_block = BasicBlock::Create(the_context, "entry", ft);
+    the_builder->setInsertPoint(basic_block);
+    named_values.clear();
+    for(auto* arg:ft->args()) named_values[arg->getName()]=&arg;
+    Value* retVal = body->codegen();
+    the_builder->SetRet(retVal);
+    return ft;
   }
 };
 
