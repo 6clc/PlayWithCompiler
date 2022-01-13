@@ -137,34 +137,50 @@ public:
   string name;
   vector<ExprAST*> paras;
   CallableAST(string name, vector<ExprAST*> paras):name(name), paras(paras){}
-  // void codegen(){
-  //   cout << "[调用函数 "<< name <<"]";
-  // }
+  Value* codegen(){
+     //cout << "[调用函数 "<< name <<"]";
+          Function* the_func = the_module->getFuntcion(name);
+          if(the_func -> args_size != paras.size()){
+                  cout << "error para size for " <<  name << endl;
+          }
+          vector<Value*> args;
+          for(auto* p:paras) args.push_back(p->codegen);
+
+          return the_builder->createCall(the_func, args, "calltmp");
+   }
   
 };
 
-class ProtoTypeAST: public ExprAST
+class ProtoTypeAST
 {
         public:
                 string name;
                 vector<string> args;
                 ProtoTypeAST(string name, vector<string> args)
                         :name(name), args(args){}
-                Value* codegen(){
+               Function* codegen(){
                         fprintf(stderr, "codegem prototype");
-                        return nullptr;
+                        vector<Value*> args_ty(args.size(), type::getDoubleTy(*the_context);
+                        FunctionType* function_ty = FunctionType::get(type:getDoubleTy*(the_context), args_ty, false);
+                        Function* ft = Function::create(function_ty, Function::ExternalLink, name, the_module->get(); 
+                                // setname
+                        return ft;
                 }
+                
+
 
 };
 
-class FuncAST: public ExprAST{
+class FuncAST{
 public:
   ExprAST* proto_type;
   ExprAST* body;
   FuncAST(ExprAST* proto_type, ExprAST* body)
     : proto_type(proto_type), body(body){}
-  Value* codegen(){
+  Function* codegen(){
   //   cout << "[定义函数 " << name << " ]";
+  Function* ft = proto_type->codegen();
+
          return nullptr;
   }
 };
